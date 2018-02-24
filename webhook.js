@@ -33,9 +33,11 @@ const getExchangeRate = async (currency = 'USD') => {
 const replyExchangeRate = async (replyToken, type, message, replyMessage) => {
   const options = {
     uri: 'https://api.line.me/v2/bot/message/reply',
+    auth: {
+      'bearer': replyToken
+    },
     header: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${replyToken}`
+      'Content-Type': 'application/json'
     },
     body: {
       replyToken: 'nHuyWiB7yP5Zw52FIkcQobQuGDXCTA',
