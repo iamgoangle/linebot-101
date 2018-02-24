@@ -35,10 +35,10 @@ const replyExchangeRate = async (replyToken, type, message, replyMessage) => {
     uri: 'https://api.line.me/v2/bot/message/reply',
     header: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer {${replyToken}}`
+      'Authorization': `Bearer ${process.env.CHANNEL_ACCESS_TOKEN}`
     },
     body: {
-      replyToken: 'nHuyWiB7yP5Zw52FIkcQobQuGDXCTA',
+      replyToken: replyToken,
       messages: [
         {
           type: 'text',
