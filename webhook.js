@@ -55,7 +55,9 @@ const replyExchangeRate = async (replyToken, type, message, replyMessage) => {
 // webhook
 app.post('/webhook', async (req, res) => {
   const { replyToken, type, ...message } = req.body.events[0];
-  const replyMessage = await getExchangeRate('USD').result.data.data_detail[0].selling;
+  let replyMessage = await getExchangeRate('USD');
+  replyMessage = replyMessage.result.data.data_detail[0].selling;
+  
   replyExchangeRate(replyToken, type, message, replyMessage);
   res.status(200).send('OK');
 });
