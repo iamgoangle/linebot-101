@@ -1,37 +1,62 @@
-const line = require('@line/bot-sdk');
+const rp = require('request-promise');
 const express = require('express');
-
-const config = {
-  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
-  channelSecret: process.env.CHANNEL_SECRET
-};
-
-// Line SDK client
-const client = new line.Client(config);
+const moment = require('moment');
+const bodyParser = require('body-parser');
 
 const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-app.post('/webhook', line.middleware(config), (req, res) => {
-  Promise.all(req.body.events.map(handleEvent))
-    .then(result => res.json(result))
-    .catch(err => {
-      console.error(err);
-      res.status(500).end();
-    });
+// bot service
+const getExchangeRate = async (currency = 'USD') => {
+  const today = moment()
+    .subtract(2, 'days')
+    .format('YYYY-MM-DD');
+  const options = {
+    uri: 'https://iapi.bot.or.th/Stat/Stat-ExchangeRate/DAILY_AVG_EXG_RATE_V1/',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': 'U9G1L457H6DCugT7VmBaEacbHV9RX0PySO05cYaGsm',
+      'Cache-Control': 'no-cache'
+    },
+    qs: {
+      start_period: today,
+      end_period: today,
+      currency: currency
+    },
+    json: true
+  };
+
+  return await rp.get(options);
+};
+
+const replyExchangeRate = async (replyToken, type, message, replyMessage) => {
+  const options = {
+    uri: 'https://api.line.me/v2/bot/message/reply',
+    header: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${replyToken}`
+    },
+    body: {
+      replyToken: 'nHuyWiB7yP5Zw52FIkcQobQuGDXCTA',
+      messages: [
+        {
+          type: 'text',
+          text: `ราคาขาย อยู่ที่ ${replyMessage}`
+        }
+      ]
+    },
+    json: true
+  };
+};
+
+// webhook
+app.post('/webhook', async (req, res) => {
+  const { replyToken, type, ...message } = req.body.events[0];
+  const replyMessage = await getExchangeRate('USD').result.data.data_detail[0].selling;
+  replyExchangeRate(replyToken, type, message, replyMessage);
+  res.status(200).send('OK');
 });
-
-function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
-    // ignore non-text-message event
-    return Promise.resolve(null);
-  }
-
-  // create a echoing text message
-  const echo = { type: 'text', text: event.message.text };
-
-  // use reply API
-  return client.replyMessage(event.replyToken, echo);
-}
 
 // listen on port
 const port = process.env.PORT || 3000;
