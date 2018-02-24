@@ -1,0 +1,28 @@
+{
+  "name": "linebot-101",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node webhook.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamgoangle/linebot-101.git"
+  },
+  "author": "Teerapong Singthong",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iamgoangle/linebot-101/issues"
+  },
+  "homepage": "https://github.com/iamgoangle/linebot-101#readme",
+  "dependencies": {
+    "@line/bot-sdk": "^5.2.0",
+    "body-parser": "^1.18.2",
+    "express": "^4.16.2"
+  },
+  "devDependencies": {
+    "morgan": "^1.9.0"
+  }
+}
