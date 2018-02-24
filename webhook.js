@@ -48,6 +48,8 @@ const replyExchangeRate = async (replyToken, type, message, replyMessage) => {
     },
     json: true
   };
+
+  return await rp.post(options);
 };
 
 // webhook
