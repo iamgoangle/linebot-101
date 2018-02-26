@@ -7,11 +7,86 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// bot service
-const getExchangeRate = async (currency = 'USD') => {
-  const today = moment()
-    .subtract(2, 'days')
-    .format('YYYY-MM-DD');
+/**
+ * ==============================
+ * ===== LINE MESSAGING API =====
+ * ==============================
+ */
+
+const handleReplyMessage = async (message) => {
+  const regex = /^(\w+).(today)$/g;
+  const scrubMessage = message.exec(message);
+  const currency = scrubMessage[1];
+  const date = scrubMessage[2];
+
+  let replyMessage = '';
+
+  try {
+    let exchangeRate = await getExchangeRate(currency.toUpperCase(), date);
+    exchangeRate = exchangeRate.result.data;
+    replyMessage = `
+      การค้นหา: ${exchangeRate.data_detail[0].currency_name_th}
+      ราคารับซื้อ ${exchangeRate.data_detail[0].buying_transfer}
+      ราคาขายออก ${exchangeRate.data_detail[0].buying_sight}
+    `;
+  } catch (e) {
+    replyMessage = `ไม่พบข้อมูลการค้นหา รูปแบบการค้นหา <สกุลเงิน> today เช่น usd today`;
+  }
+
+
+  return replyMessage;
+};
+
+const issueAccessToken = async () => {
+  try {
+    const options = {
+      method: 'POST',
+      uri: 'https://api.line.me/v2/oauth/accessToken',
+      form: {
+        'grant_type': 'client_credentials',
+        'client_id': process.env.client_id,
+        'client_secret': process.env.client_secret
+      }
+    };
+
+    return await rp(options);
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const sendReplyMessage = async (replyToken, type, message, replyMessage) => {
+  const TOKEN = await issueAccessToken();
+
+  let options = {
+    uri: 'https://api.line.me/v2/bot/message/reply',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${ACCESS_TOKEN.access_token}`
+    },
+    body: {
+      replyToken: replyToken,
+      messages: [
+        {
+          type: 'text',
+          text: replyMessage
+        }
+      ]
+    },
+    json: true
+  };
+
+  return await rp.post(options);
+};
+
+/**
+ * ================================
+ * ===== BANK OF THAILAND API =====
+ * ================================
+ */
+
+const getExchangeRate = async (currency = 'USD', date) => {
+  const today = moment().format('YYYY-MM-DD');
   const options = {
     uri: 'https://iapi.bot.or.th/Stat/Stat-ExchangeRate/DAILY_AVG_EXG_RATE_V1/',
     headers: {
@@ -30,35 +105,17 @@ const getExchangeRate = async (currency = 'USD') => {
   return await rp.get(options);
 };
 
-const replyExchangeRate = async (replyToken, type, message, replyMessage) => {
-  let options = {
-    uri: 'https://api.line.me/v2/bot/message/reply',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.CHANNEL_ACCESS_TOKEN}`
-    },
-    body: {
-      replyToken: replyToken,
-      messages: [
-        {
-          type: 'text',
-          text: `ราคาขาย อยู่ที่ ${replyMessage}`
-        }
-      ]
-    },
-    json: true
-  };
+/**
+ * ===================
+ * ===== WEBHOOK =====
+ * ===================
+ */
 
-  return await rp.post(options);
-};
-
-// webhook
 app.post('/webhook', async (req, res) => {
   const { replyToken, type, ...message } = req.body.events[0];
-  let replyMessage = await getExchangeRate('USD');
-  replyMessage = replyMessage.result.data.data_detail[0].selling;
-  
-  replyExchangeRate(replyToken, type, message, replyMessage);
+  const replyMessage = await handleReplyMessage(message);
+
+  sendReplyMessage(replyToken, type, message, replyMessage);
   res.status(200).send('OK');
 });
 
