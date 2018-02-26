@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 
 const handleReplyMessage = async (message) => {
   const regex = /^(\w+).(today)$/g;
-  const scrubMessage = message.exec(message);
+  const scrubMessage = regex.exec(message);
   const currency = scrubMessage[1];
   const date = scrubMessage[2];
 
