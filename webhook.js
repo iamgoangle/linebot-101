@@ -14,7 +14,7 @@ app.use(bodyParser.json());
  */
 
 const getExchangeRate = async (currency = 'USD', date) => {
-  const today = moment().subtract(1, "days").format('YYYY-MM-DD');
+  const today = moment().format('YYYY-MM-DD');
   const options = {
     uri: 'https://iapi.bot.or.th/Stat/Stat-ExchangeRate/DAILY_AVG_EXG_RATE_V1/',
     headers: {
@@ -40,14 +40,10 @@ const getExchangeRate = async (currency = 'USD', date) => {
  */
 
 const handleReplyMessage = async (message) => {
-  console.log(message);
   const regex = /^(\w+).(today)$/g;
   const scrubMessage = regex.exec(message);
   const currency = scrubMessage[1];
   const date = scrubMessage[2];
-
-  console.log(currency);
-  console.log(date);
 
   let replyMessage = '';
 
@@ -63,7 +59,10 @@ const handleReplyMessage = async (message) => {
     `;
 
   } catch (e) {
-    replyMessage = `ไม่พบข้อมูลการค้นหา รูปแบบการค้นหา <สกุลเงิน> เช่น usd`;
+    replyMessage = `
+      ไม่พบข้อมูลการค้นหา รูปแบบการค้นหา <สกุลเงิน> เช่น usd
+      และ ราคาจะมีการอัพเดต หลัง 18:00 เป็นต้นไปครับผม
+    `;
   }
 
   return replyMessage;
@@ -119,7 +118,7 @@ const sendReplyMessage = async (replyToken, type, replyMessage) => {
 
 app.post('/webhook', async (req, res) => {
   const { replyToken, type, ...message } = req.body.events[0];
-  const replyMessage = await handleReplyMessage(message);
+  const replyMessage = await handleReplyMessage(message.message);
 
   sendReplyMessage(replyToken, type, replyMessage);
   res.status(200).send('OK');
