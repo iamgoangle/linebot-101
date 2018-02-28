@@ -118,7 +118,7 @@ const sendReplyMessage = async (replyToken, type, replyMessage) => {
 
 app.post('/webhook', async (req, res) => {
   const { replyToken, type, ...message } = req.body.events[0];
-  const replyMessage = await handleReplyMessage(message.message);
+  const replyMessage = await handleReplyMessage(message.text);
 
   sendReplyMessage(replyToken, type, replyMessage);
   res.status(200).send('OK');
