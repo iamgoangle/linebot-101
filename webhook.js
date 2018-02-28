@@ -8,31 +8,63 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 /**
+ * ================================
+ * ===== BANK OF THAILAND API =====
+ * ================================
+ */
+
+const getExchangeRate = async (currency = 'USD', date) => {
+  const today = moment().subtract(1, "days").format('YYYY-MM-DD');
+  const options = {
+    uri: 'https://iapi.bot.or.th/Stat/Stat-ExchangeRate/DAILY_AVG_EXG_RATE_V1/',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': 'U9G1L457H6DCugT7VmBaEacbHV9RX0PySO05cYaGsm',
+      'Cache-Control': 'no-cache'
+    },
+    qs: {
+      start_period: today,
+      end_period: today,
+      currency: currency
+    },
+    json: true
+  };
+
+  return await rp.get(options);
+};
+
+/**
  * ==============================
  * ===== LINE MESSAGING API =====
  * ==============================
  */
 
 const handleReplyMessage = async (message) => {
+  console.log(message);
   const regex = /^(\w+).(today)$/g;
   const scrubMessage = regex.exec(message);
   const currency = scrubMessage[1];
   const date = scrubMessage[2];
+
+  console.log(currency);
+  console.log(date);
 
   let replyMessage = '';
 
   try {
     let exchangeRate = await getExchangeRate(currency.toUpperCase(), date);
     exchangeRate = exchangeRate.result.data;
+
     replyMessage = `
+      Last update: ${exchangeRate.data_header.last_updated} 
       การค้นหา: ${exchangeRate.data_detail[0].currency_name_th}
       ราคารับซื้อ ${exchangeRate.data_detail[0].buying_transfer}
       ราคาขายออก ${exchangeRate.data_detail[0].buying_sight}
     `;
-  } catch (e) {
-    replyMessage = `ไม่พบข้อมูลการค้นหา รูปแบบการค้นหา <สกุลเงิน> today เช่น usd today`;
-  }
 
+  } catch (e) {
+    replyMessage = `ไม่พบข้อมูลการค้นหา รูปแบบการค้นหา <สกุลเงิน> เช่น usd`;
+  }
 
   return replyMessage;
 };
@@ -55,7 +87,7 @@ const issueAccessToken = async () => {
   }
 };
 
-const sendReplyMessage = async (replyToken, type, message, replyMessage) => {
+const sendReplyMessage = async (replyToken, type, replyMessage) => {
   const TOKEN = await issueAccessToken();
 
   let options = {
@@ -80,32 +112,6 @@ const sendReplyMessage = async (replyToken, type, message, replyMessage) => {
 };
 
 /**
- * ================================
- * ===== BANK OF THAILAND API =====
- * ================================
- */
-
-const getExchangeRate = async (currency = 'USD', date) => {
-  const today = moment().format('YYYY-MM-DD');
-  const options = {
-    uri: 'https://iapi.bot.or.th/Stat/Stat-ExchangeRate/DAILY_AVG_EXG_RATE_V1/',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': 'U9G1L457H6DCugT7VmBaEacbHV9RX0PySO05cYaGsm',
-      'Cache-Control': 'no-cache'
-    },
-    qs: {
-      start_period: today,
-      end_period: today,
-      currency: currency
-    },
-    json: true
-  };
-
-  return await rp.get(options);
-};
-
-/**
  * ===================
  * ===== WEBHOOK =====
  * ===================
@@ -115,7 +121,7 @@ app.post('/webhook', async (req, res) => {
   const { replyToken, type, ...message } = req.body.events[0];
   const replyMessage = await handleReplyMessage(message);
 
-  sendReplyMessage(replyToken, type, message, replyMessage);
+  sendReplyMessage(replyToken, type, replyMessage);
   res.status(200).send('OK');
 });
 
