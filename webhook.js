@@ -104,7 +104,7 @@ const sendReplyMessage = async (replyToken, type, replyMessage) => {
     uri: 'https://api.line.me/v2/bot/message/reply',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${ACCESS_TOKEN.access_token}`
+      'Authorization': `Bearer ${TOKEN.access_token}`
     },
     body: {
       replyToken: replyToken,
