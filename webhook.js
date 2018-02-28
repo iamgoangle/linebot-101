@@ -14,23 +14,28 @@ app.use(bodyParser.json());
  */
 
 const getExchangeRate = async (currency = 'USD', date) => {
-  const today = moment().format('YYYY-MM-DD');
-  const options = {
-    uri: 'https://iapi.bot.or.th/Stat/Stat-ExchangeRate/DAILY_AVG_EXG_RATE_V1/',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': 'U9G1L457H6DCugT7VmBaEacbHV9RX0PySO05cYaGsm',
-      'Cache-Control': 'no-cache'
-    },
-    qs: {
-      start_period: today,
-      end_period: today,
-      currency: currency
-    },
-    json: true
-  };
+  try {
+    const today = moment().subtract(1, 'days').format('YYYY-MM-DD');
+    const options = {
+      uri: 'https://iapi.bot.or.th/Stat/Stat-ExchangeRate/DAILY_AVG_EXG_RATE_V1/',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': 'U9G1L457H6DCugT7VmBaEacbHV9RX0PySO05cYaGsm',
+        'Cache-Control': 'no-cache'
+      },
+      qs: {
+        start_period: today,
+        end_period: today,
+        currency: currency
+      },
+      json: true
+    };
 
-  return await rp.get(options);
+    return await rp.get(options);
+  } catch (e) {
+    console.error(e);
+  }
+  
 };
 
 /**
@@ -41,15 +46,21 @@ const getExchangeRate = async (currency = 'USD', date) => {
 
 const handleReplyMessage = async (message) => {
   const regex = /^(\w+).(today)$/g;
-  const scrubMessage = regex.exec(message);
+  const scrubMessage = await regex.exec(message);
   const currency = scrubMessage[1];
   const date = scrubMessage[2];
+
+  console.log(message);
 
   let replyMessage = '';
 
   try {
     let exchangeRate = await getExchangeRate(currency.toUpperCase(), date);
     exchangeRate = exchangeRate.result.data;
+
+    if (!exchangeRate.data_detail[0].buying_transfer) {
+      throw new Error('Whoops!');
+    } 
 
     replyMessage = `
       Last update: ${exchangeRate.data_header.last_updated} 
@@ -117,9 +128,8 @@ const sendReplyMessage = async (replyToken, type, replyMessage) => {
  */
 
 app.post('/webhook', async (req, res) => {
-  const { replyToken, type, ...message } = req.body.events[0];
+  const { replyToken, type, message } = req.body.events[0];
   const replyMessage = await handleReplyMessage(message.text);
-
   sendReplyMessage(replyToken, type, replyMessage);
   res.status(200).send('OK');
 });
