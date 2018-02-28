@@ -100,6 +100,8 @@ const issueAccessToken = async () => {
 const sendReplyMessage = async (replyToken, type, replyMessage) => {
   const TOKEN = await issueAccessToken();
 
+  console.log(TOKEN);
+
   let options = {
     uri: 'https://api.line.me/v2/bot/message/reply',
     headers: {
@@ -117,6 +119,8 @@ const sendReplyMessage = async (replyToken, type, replyMessage) => {
     },
     json: true
   };
+
+  console.log(options);
 
   return await rp.post(options);
 };
