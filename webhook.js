@@ -50,8 +50,6 @@ const handleReplyMessage = async (message) => {
   const currency = scrubMessage[1];
   const date = scrubMessage[2];
 
-  console.log(message);
-
   let replyMessage = '';
 
   try {
@@ -99,14 +97,13 @@ const issueAccessToken = async () => {
 
 const sendReplyMessage = async (replyToken, type, replyMessage) => {
   const TOKEN = await issueAccessToken();
-
-  console.log(TOKEN);
+  const ACCESS_TOKEN = JSON.parse(TOKEN).access_token;
 
   let options = {
     uri: 'https://api.line.me/v2/bot/message/reply',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${TOKEN.access_token}`
+      'Authorization': `Bearer ${ACCESS_TOKEN}`
     },
     body: {
       replyToken: replyToken,
@@ -119,8 +116,6 @@ const sendReplyMessage = async (replyToken, type, replyMessage) => {
     },
     json: true
   };
-
-  console.log(options);
 
   return await rp.post(options);
 };
